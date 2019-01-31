@@ -7,8 +7,10 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import utils.twc.deskcom_importer.data.BaseResponse;
 import utils.twc.deskcom_importer.data.BaseResponseCase;
+import utils.twc.deskcom_importer.data.BaseResponseHistory;
 import utils.twc.deskcom_importer.data.BaseResponseReply;
 import utils.twc.deskcom_importer.data.Case;
+import utils.twc.deskcom_importer.data.Link;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -76,23 +78,39 @@ public class DeskFetchService {
         List<Case> cases = baseResponse.get_embedded().getEntries();
         if (cases.size() > 0) {
             for (Case c : cases) {
-                getReplies(c);
+                getCaseData(
+                        () -> c.get_links().getReplies(),
+                        (url) -> restTemplate.getForEntity(url, BaseResponseReply.class));
+
+                getCaseData(
+                        () -> c.get_links().getHistory(),
+                        (url) -> restTemplate.getForEntity(url, BaseResponseHistory.class));
 //                getAttachments(c);
             }
         }
     }
 
-    private void getReplies(Case c) {
-        if (c.get_links().getReplies() != null && c.get_links().getReplies().getCount() > 0) {
-            String href = c.get_links().getReplies().getHref();
+    interface Fetcher<T> {
+        ResponseEntity<T> fetch(String url);
+    }
 
-            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(DESK_URL + href)
-                    /*.queryParam("per_page", PER_PAGE_SIZE)
-                    .queryParam("page", page)
-                    .queryParam("sort_field", "id")
-                    .queryParam("sort_direction", "asc")*/;
+    interface UrlGetter {
+        Link getUrl();
+    }
 
-            ResponseEntity<BaseResponseReply> response = restTemplate.getForEntity(uriBuilder.toUriString(), BaseResponseReply.class);
+    private <T extends BaseResponse> void getCaseData(UrlGetter urlGetter, Fetcher<T> fetchLogic) {
+        Link link = urlGetter.getUrl();
+        String nextUrl = null;
+
+        if (link != null && (link.getCount() == null || link.getCount() > 0)) {
+            nextUrl = link.getHref();
+        }
+
+        while (nextUrl != null) {
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(DESK_URL + nextUrl)
+                    .queryParam("per_page", PER_PAGE_SIZE);
+            ResponseEntity<T> response = fetchLogic.fetch(uriBuilder.toUriString());
+            nextUrl = response.getBody().get_links().getNext() != null ? response.getBody().get_links().getNext().getHref() : null;
 
             System.out.println(response.getBody().get_embedded().getEntries().get(0));
         }

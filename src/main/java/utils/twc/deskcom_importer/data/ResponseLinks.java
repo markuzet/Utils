@@ -4,49 +4,49 @@ package utils.twc.deskcom_importer.data;
  * @author Mark Kuznetsov (mkuznetsov@evelopers.com)
  */
 public class ResponseLinks {
-    private String self;
-    private String first;
-    private String last;
-    private String next;
-    private String previous;
+    private Link self;
+    private Link first;
+    private Link last;
+    private Link next;
+    private Link previous;
 
-    public String getSelf() {
+    public Link getSelf() {
         return self;
     }
 
-    public void setSelf(String self) {
+    public void setSelf(Link self) {
         this.self = self;
     }
 
-    public String getFirst() {
+    public Link getFirst() {
         return first;
     }
 
-    public void setFirst(String first) {
+    public void setFirst(Link first) {
         this.first = first;
     }
 
-    public String getLast() {
+    public Link getLast() {
         return last;
     }
 
-    public void setLast(String last) {
+    public void setLast(Link last) {
         this.last = last;
     }
 
-    public String getNext() {
+    public Link getNext() {
         return next;
     }
 
-    public void setNext(String next) {
+    public void setNext(Link next) {
         this.next = next;
     }
 
-    public String getPrevious() {
+    public Link getPrevious() {
         return previous;
     }
 
-    public void setPrevious(String previous) {
+    public void setPrevious(Link previous) {
         this.previous = previous;
     }
 }

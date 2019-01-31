@@ -6,7 +6,7 @@ package utils.twc.deskcom_importer.data;
 public class BaseResponse<T> {
     private String page;
     private Integer total_entries;
-    private ResponseLinks links;
+    private ResponseLinks _links;
 
     private Embedded<T> _embedded;
 
@@ -26,12 +26,12 @@ public class BaseResponse<T> {
         this.total_entries = total_entries;
     }
 
-    public ResponseLinks getLinks() {
-        return links;
+    public ResponseLinks get_links() {
+        return _links;
     }
 
-    public void setLinks(ResponseLinks links) {
-        this.links = links;
+    public void set_links(ResponseLinks _links) {
+        this._links = _links;
     }
 
     public Embedded<T> get_embedded() {
