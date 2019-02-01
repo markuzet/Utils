@@ -26,10 +26,11 @@ public class DeskFetchService {
     private static final String DESK_PASSWORD = "eVe10per8*";
     private static final String DESK_SERVER = "theweatherchannel.desk.com";
     private static final String DESK_URL = "https://" + DESK_SERVER;
-    private static final Integer PER_PAGE_SIZE = 100;
+    private static final Integer PER_PAGE_SIZE = 5;
     private static final Integer PAGE_LIMIT = 500;
 
     private RestTemplate restTemplate = new RestTemplate();
+    private SfLoader sfLoader = new SfLoader();
 
     DeskFetchService() {
         javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier(
@@ -53,7 +54,7 @@ public class DeskFetchService {
             for (int page = 1; page < PAGE_LIMIT; page++) {
                 BaseResponseCase baseResponse = fetchCases(page, fromId);
 
-                // processing goes here
+                // case processing goes here
                 collectCasesInfo(baseResponse);
                 totalFetched += baseResponse.get_embedded().getEntries().size();
 
@@ -76,6 +77,9 @@ public class DeskFetchService {
 
     private void collectCasesInfo(BaseResponseCase baseResponse) {
         List<Case> cases = baseResponse.get_embedded().getEntries();
+
+        sfLoader.insertCases(cases);
+
         if (cases.size() > 0) {
             for (Case c : cases) {
                 getCaseData(
@@ -84,7 +88,15 @@ public class DeskFetchService {
 
                 getCaseData(
                         () -> c.get_links().getHistory(),
-                        (url) -> restTemplate.getForEntity(url, BaseResponseHistory.class));
+                        (url) -> {
+                            ResponseEntity<BaseResponseHistory> forEntity = null;
+                            try {
+                                forEntity = restTemplate.getForEntity(url, BaseResponseHistory.class);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            return forEntity;
+                        });
 //                getAttachments(c);
             }
         }
@@ -107,11 +119,15 @@ public class DeskFetchService {
         }
 
         while (nextUrl != null) {
-            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(DESK_URL + nextUrl)
-                    .queryParam("per_page", PER_PAGE_SIZE);
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(DESK_URL + nextUrl);
+            if (!nextUrl.contains("per_page")) {
+                uriBuilder.queryParam("per_page", PER_PAGE_SIZE);
+            }
+
             ResponseEntity<T> response = fetchLogic.fetch(uriBuilder.toUriString());
             nextUrl = response.getBody().get_links().getNext() != null ? response.getBody().get_links().getNext().getHref() : null;
 
+            // case data processing goes here
             System.out.println(response.getBody().get_embedded().getEntries().get(0));
         }
     }
